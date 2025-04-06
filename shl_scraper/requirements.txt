@@ -1,0 +1,19 @@
+# Core dependencies
+aiohttp>=3.8.1
+beautifulsoup4>=4.9.3
+python-dotenv>=0.19.0
+
+# Data processing
+pandas>=1.2.4
+numpy>=1.26.4
+
+# LLM Integration
+google-generativeai>=0.3.0
+tenacity>=8.0.1
+
+# Development dependencies
+pytest>=8.0.2
+pytest-asyncio>=0.23.5
+black>=24.2.0
+flake8>=7.0.0
+mypy>=1.8.0 
