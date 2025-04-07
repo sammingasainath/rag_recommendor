@@ -20,4 +20,6 @@ __all__ = [
     "JobRequirements",
     "RecommendationRequest",
     "RecommendationResponse",
-] 
+]
+
+# Models for SHL Assessment Recommendation Engine 

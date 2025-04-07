@@ -1,41 +1,56 @@
-from fastapi import FastAPI
+import logging
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+import time
+import uvicorn
 
-from core.config import settings
-from routers import assessments, recommendations
+from backend.core.config import settings
+from backend.routers import recommendations, assessments
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title=settings.APP_NAME,
-    description="SHL Assessment Recommendation Engine API",
-    version="1.0.0",
+    description=settings.APP_DESCRIPTION,
+    version=settings.APP_VERSION,
 )
 
-# Configure CORS
+# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Modify this in production
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(assessments.router, prefix="/api/v1", tags=["assessments"])
-app.include_router(recommendations.router, prefix="/api/v1", tags=["recommendations"])
+# Add request logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    logger.info(f"{request.method} {request.url.path} - {response.status_code} - {process_time:.4f}s")
+    return response
 
-@app.get("/")
-async def root():
-    return {
-        "message": "Welcome to SHL Assessment Recommendation Engine API",
-        "docs_url": "/docs",
-        "redoc_url": "/redoc"
-    }
+# Include routers
+app.include_router(recommendations.router, prefix="/api", tags=["recommendations"])
+app.include_router(assessments.router, prefix="/api", tags=["assessments"])
+
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint."""
+    return {"status": "healthy", "version": settings.APP_VERSION}
 
 if __name__ == "__main__":
-    import uvicorn
     uvicorn.run(
-        "main:app",
+        "backend.main:app",
         host=settings.HOST,
         port=settings.PORT,
-        reload=settings.DEBUG
+        reload=settings.DEBUG,
     ) 
