@@ -1,0 +1,159 @@
+\documentclass[10pt,a4paper,twocolumn]{article}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+% Define colors
+\definecolor{sectioncolor}{RGB}{0, 51, 102}
+\definecolor{subsectioncolor}{RGB}{0, 90, 120}
+\definecolor{titlecolor}{RGB}{0, 51, 102}
+\definecolor{accent}{RGB}{70, 130, 180}
+
+% Title and section formatting
+\titleformat{\section}{\normalfont\small\bfseries\color{sectioncolor}}{\thesection}{0.5em}{}
+\titleformat{\subsection}{\normalfont\footnotesize\bfseries\color{subsectioncolor}}{\thesubsection}{0.5em}{}
+\titlespacing{\section}{0pt}{0.7em}{0.3em}
+\titlespacing{\subsection}{0pt}{0.5em}{0.2em}
+
+% Custom bullet style
+\renewcommand{\labelitemi}{{\color{accent}$\bullet$}}
+
+% Page style
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize SHL Assessment Recommendation Engine}
+\fancyhead[R]{\footnotesize Development Journey}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Document settings
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+\setlength{\columnsep}{0.3in}
+
+\begin{document}
+
+\twocolumn[{
+\begin{center}
+\vspace{-1em}
+{\color{titlecolor}\Large\textbf{SHL Assessment Recommendation Engine:}\\
+\vspace{0.2em}
+\large\textbf{Development Journey}}\\
+\vspace{0.5em}
+{\small SHL Intern Assignment}
+\vspace{0.8em}
+\rule{0.8\textwidth}{0.5pt}
+\vspace{0.3em}
+\end{center}
+}]
+
+\section*{Project Overview}
+\small
+This document chronicles my journey developing a Retrieval-Augmented Generation (RAG) system for recommending SHL talent assessments. Starting with a comprehensive literature review of recommendation architectures and vector search mechanisms, I designed a solution integrating data acquisition, semantic search, and LLM-powered generation. My research-driven approach enabled me to identify the most effective techniques for each system component, resulting in a highly responsive recommendation engine capable of understanding complex HR requirements.
+
+\section{Data Acquisition \& Processing}
+\small
+The project began with a thorough analysis of SHL's assessment catalog structure, revealing no accessible public API. Drawing on my background in web information retrieval, I engineered a sophisticated web scraper with adaptive mechanisms to handle several complex challenges:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item Two distinct catalogs with different pagination mechanisms requiring separate traversal strategies
+    \item Non-standard pagination that demanded custom HTTP header configurations and intelligent retry logic
+    \item Widely varying HTML structures necessitating a cascade of context-aware selector strategies
+    \item Heterogeneous data representation across different assessment types
+\end{itemize}
+
+The extraction of consistent assessment descriptions presented particularly intricate challenges. Through iterative refinement and pattern analysis of the DOM structures, I developed a recursive traversal algorithm that employed contextual heuristics to distinguish primary content from peripheral elements. This approach successfully identified and extracted meaningful descriptions even across substantially different page structures, demonstrating my ability to recognize patterns in unstructured data.
+
+\section{RAG Pipeline Implementation}
+\small
+The recommendation engine architecture emerged from methodical research into current RAG approaches:
+
+\subsection{Vector Database Evaluation}
+\small
+After conducting a systematic comparison of vector database solutions against requirements for search performance, filtering capabilities, and integration complexity, I selected PostgreSQL with pgvector as the optimal foundation. This led to the development of:
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item Custom SQL function incorporating both semantic matching and structured filtering in a single query
+    \item Carefully tuned HNSW indexing parameters based on empirical testing with the assessment corpus
+    \item Dynamic SQL construction techniques that push filter constraints to the database layer
+\end{itemize}
+
+\subsection{Embedding Strategy}
+\small
+My research into semantic representation approaches informed several critical design decisions:
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item Systematic benchmarking of embedding models with different dimensionality and context window characteristics
+    \item Development of composite embedding templates that capture both categorical and descriptive assessment attributes
+    \item Implementation of database triggers that ensure embedding consistency during assessment updates
+\end{itemize}
+
+\subsection{Recommendation Pipeline Architecture}
+\small
+The core pipeline incorporates several innovative elements derived from both academic research and practical experimentation:
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item Asynchronous query processing with dynamically adjustable retrieval parameters based on query complexity
+    \item Multi-stage filtering that preserves semantic relevance while enforcing organizational constraints
+    \item Carefully engineered LLM prompting strategies that produce contextually grounded explanations
+    \item Adaptive score normalization that balances vector similarity with semantic relevance
+\end{itemize}
+
+Through extensive experimentation with different pipeline configurations, I discovered that batched processing combined with strategically calibrated retrieval multipliers significantly enhanced response efficiency while maintaining recommendation quality. This process of methodical experimentation demonstrates my commitment to evidence-based optimization.
+
+\section{Evaluation Framework Design}
+\small
+To ensure recommendation quality and enable data-driven refinement, I developed a comprehensive evaluation system reflecting best practices in information retrieval:
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item Creation of a diverse ground truth dataset covering various job roles and assessment types
+    \item Implementation of industry-standard metrics that measure different aspects of recommendation quality
+    \item Design of a persistent evaluation service that tracks performance across system iterations
+    \item Development of RESTful evaluation endpoints enabling continuous quality monitoring
+\end{itemize}
+
+This framework allowed me to systematically investigate the impact of different parameter configurations, leading to the identification of optimal threshold values and retrieval strategies. The ability to quantify system performance across iterations proved invaluable for guiding further enhancements, highlighting my methodical approach to system optimization.
+
+\section{Technical Challenges \& Problem-Solving Approaches}
+\small
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item \textbf{HTML Structure Variability:} When confronted with wildly inconsistent HTML patterns, I developed a machine learning-inspired approach that combined multiple selector strategies with statistical validation of extracted content. This adaptive parsing system could effectively identify relevant content even when page structures deviated significantly from expected patterns.
+    
+    \item \textbf{Semantic Representation Challenges:} Upon discovering degradation in query understanding for specialized HR terminology, I researched embedding techniques specifically suited for domain-specific language. This led to the development of composite embedding templates that combine structured metadata with narrative descriptions, preserving contextual relationships between assessment attributes.
+    
+    \item \textbf{Query Performance Bottlenecks:} Through systematic profiling of query execution patterns, I identified that post-retrieval filtering was creating significant latency for complex constraints. By reformulating the filtering approach to leverage database-side query optimization, I was able to dramatically reduce processing time for multi-constraint scenarios.
+    
+    \item \textbf{LLM Hallucination:} When detecting instances of the LLM generating non-existent assessments, I studied recent research on prompt engineering for grounded generation. This informed the development of robust instruction formats with explicit grounding requirements that substantially reduced fabrication issues.
+    
+    \item \textbf{System Responsiveness:} After investigating request patterns under load, I implemented a strategic caching architecture for embeddings and intermediate query results, significantly improving system throughput during peak usage scenarios.
+\end{itemize}
+
+\section{Frontend Integration}
+\small
+Drawing inspiration from user experience research in conversational interfaces, I designed a Streamlit-based interface that balances sophistication with accessibility:
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item Natural language query interface supplemented with intuitive filtering options for precise requirement specification
+    \item Information-rich result cards that contextualize recommendations with relevant explanations
+    \item Responsive design principles that adapt the interface based on device capabilities
+    \item Comprehensive error handling with graceful degradation pathways for component failures
+\end{itemize}
+
+\section{Future Research Directions}
+\small
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item \textbf{Domain-Specific Representation Learning:} Investigate techniques for fine-tuning embedding models on HR-specific corpora to capture specialized semantic relationships within talent assessment terminology.
+    
+    \item \textbf{Natural Language Understanding for Constraints:} Explore advanced entity recognition approaches that could automatically extract structured constraints (job levels, duration requirements, test types) from natural language queries.
+    
+    \item \textbf{Continuous Learning Architecture:} Design an MLOps framework incorporating automated A/B testing and parameter optimization based on evolving usage patterns.
+    
+    \item \textbf{Feedback-Driven Refinement:} Develop mechanisms for capturing both explicit and implicit user feedback to continuously enhance recommendation relevance through reinforcement learning techniques.
+\end{itemize}
+
+\section*{Conclusion}
+\small
+This project demonstrates how systematic research and methodical problem-solving can produce an intelligent recommendation system that truly understands complex requirements. By drawing on diverse disciplines—from information retrieval and natural language processing to database optimization and user experience design—I created a solution that bridges structured filtering with semantic understanding. The resulting system delivers contextually relevant recommendations that surpass conventional keyword-based approaches in both relevance and usability, significantly streamlining the assessment selection process for HR professionals.
+
+\end{document} 
