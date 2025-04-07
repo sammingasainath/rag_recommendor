@@ -5,7 +5,7 @@ import time
 import uvicorn
 
 from backend.core.config import settings
-from backend.routers import recommendations, assessments
+from backend.routers import recommendations, assessments, evaluation
 
 # Set up logging
 logging.basicConfig(
@@ -41,6 +41,7 @@ async def log_requests(request: Request, call_next):
 # Include routers
 app.include_router(recommendations.router, prefix="/api", tags=["recommendations"])
 app.include_router(assessments.router, prefix="/api", tags=["assessments"])
+app.include_router(evaluation.router, prefix="/api", tags=["evaluation"])
 
 @app.get("/api/health")
 async def health_check():

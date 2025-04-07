@@ -10,6 +10,11 @@ from .recommendation import (
     RecommendationRequest,
     RecommendationResponse,
 )
+from .evaluation import (
+    QueryGroundTruth,
+    EvaluationResult,
+    EvaluationSummary,
+)
 
 __all__ = [
     "AssessmentBase",
@@ -20,6 +25,9 @@ __all__ = [
     "JobRequirements",
     "RecommendationRequest",
     "RecommendationResponse",
+    "QueryGroundTruth",
+    "EvaluationResult",
+    "EvaluationSummary",
 ]
 
 # Models for SHL Assessment Recommendation Engine 

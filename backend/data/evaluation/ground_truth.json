@@ -1,0 +1,172 @@
+[
+  {
+    "id": "query_programming_skills",
+    "query": "Find assessments for software developers with programming skills",
+    "relevant_assessments": [
+      "Automata (New)",
+      "Automata Pro (New)",
+      "C Programming (New)",
+      "C# Programming (New)",
+      "C++ Programming (New)",
+      "Java Programming (Advanced Level) (New)",
+      "Python (New)",
+      "JavaScript (New)",
+      ".NET Framework 4.5",
+      "ASP.NET 4.5"
+    ],
+    "description": "Query for programming skill assessments across various languages"
+  },
+  {
+    "id": "query_data_science",
+    "query": "Recommend assessments for data science and machine learning positions",
+    "relevant_assessments": [
+      "Data Science (New)",
+      "Automata Data Science (New)",
+      "Automata Data Science Pro (New)",
+      "Apache Hadoop (New)",
+      "Basic Statistics (New)",
+      "Econometrics (New)",
+      "Apache Spark (New)",
+      "Apache Kafka (New)",
+      "Python (New)",
+      "SQL (New)"
+    ],
+    "description": "Query for data science and analytics related assessments"
+  },
+  {
+    "id": "query_leadership",
+    "query": "Find assessments for evaluating leadership and management skills",
+    "relevant_assessments": [
+      "Enterprise Leadership Report 2.0",
+      "Executive Scenarios",
+      "Executive Scenarios Narrative Report",
+      "HiPo Assessment Report 2.0",
+      "HiPo Unlocking Potential Report 2.0",
+      "Digital Readiness Development Report - Manager",
+      "Graduate Scenarios",
+      "Assessment and Development Center Exercises",
+      "Global Skills Assessment",
+      "Enterprise Leadership Report 1.0"
+    ],
+    "description": "Query for leadership and management assessment tools"
+  },
+  {
+    "id": "query_customer_service",
+    "query": "Assessments for customer service and call center roles",
+    "relevant_assessments": [
+      "Customer Service Phone Simulation",
+      "Customer Service Phone Solution",
+      "Contact Center Call Simulation (New)",
+      "Conversational Multichat Simulation",
+      "Entry Level Customer Serv-Retail & Contact Center",
+      "Entry Level Customer Service (General) Solution",
+      "Dependability and Safety Instrument (DSI)",
+      "Business Communication (adaptive)",
+      "Global Skills Development Report",
+      "AI Skills"
+    ],
+    "description": "Query for customer service related assessments"
+  },
+  {
+    "id": "query_cloud_computing",
+    "query": "Recommend assessments for cloud computing and DevOps engineers",
+    "relevant_assessments": [
+      "Cloud Computing (New)",
+      "Amazon Web Services (AWS) Development (New)",
+      "Docker (New)",
+      "Cisco AppDynamics (New)",
+      "Agile Software Development",
+      "GIT (New)",
+      "Automation Anywhere RPA Development (New)",
+      "BizTalk (New)",
+      "Apache Hadoop (New)",
+      "Apache Spark (New)"
+    ],
+    "description": "Query for cloud computing and DevOps related assessments"
+  },
+  {
+    "id": "query_engineering",
+    "query": "Assessments for engineering positions in various domains",
+    "relevant_assessments": [
+      "Electrical Engineering (New)",
+      "Mechanical Engineering (New)",
+      "Civil Engineering (New)",
+      "Chemical Engineering (New)",
+      "Aeronautical Engineering (New)",
+      "Aerospace Engineering (New)",
+      "Electronics and Semiconductor Engineering (New)",
+      "Automotive Engineering (New)",
+      "Fundamentals of Physics (New)",
+      "Geoinformatics Engineering (New)"
+    ],
+    "description": "Query for engineering assessments across different disciplines"
+  },
+  {
+    "id": "query_frontend_development",
+    "query": "Find assessments for frontend developers and UI designers",
+    "relevant_assessments": [
+      "Automata Front End",
+      "CSS3 (New)",
+      "HTML5 (New)",
+      "JavaScript (New)",
+      "Angular 6 (New)",
+      "AngularJS (New)",
+      "React (New)",
+      "Dojo (New)",
+      "ExpressJS (New)",
+      "jQuery (New)"
+    ],
+    "description": "Query for frontend development and UI assessment tools"
+  },
+  {
+    "id": "query_graduate_recruitment",
+    "query": "Assessments suitable for graduate recruitment and campus hiring",
+    "relevant_assessments": [
+      "Graduate Scenarios",
+      "Graduate Scenarios Narrative Report",
+      "Global Skills Assessment",
+      "AI Skills",
+      "Business Communication (adaptive)",
+      "Data Science (New)",
+      "Automata (New)",
+      "Python (New)",
+      "Agile Software Development",
+      "Basic Statistics (New)"
+    ],
+    "description": "Query for graduate recruitment assessment tools"
+  },
+  {
+    "id": "query_remote_testing",
+    "query": "Find assessments that support remote testing for work-from-home candidates",
+    "relevant_assessments": [
+      "Automata (New)",
+      "Customer Service Phone Simulation",
+      "Global Skills Assessment",
+      "AI Skills",
+      "Digital Readiness Development Report - IC",
+      "Data Entry (New)",
+      "Python (New)",
+      "Cloud Computing (New)",
+      "Cyber Risk (New)",
+      "Business Communication (adaptive)"
+    ],
+    "description": "Query for assessments with remote testing capabilities"
+  },
+  {
+    "id": "query_entry_level",
+    "query": "Recommend assessments for entry-level candidates with no experience",
+    "relevant_assessments": [
+      "Entry Level Customer Service (General) Solution",
+      "Entry Level Cashier Solution",
+      "Entry Level Hotel Front Desk Solution",
+      "Entry Level Sales Solution",
+      "Entry Level Technical Support Solution",
+      "Basic Computer Literacy (Windows 10) (New)",
+      "Data Entry (New)",
+      "Filing - Names (R1)",
+      "Filing - Numbers",
+      "Following Instructions v1 - US (R2)"
+    ],
+    "description": "Query for entry-level assessment tools"
+  }
+]

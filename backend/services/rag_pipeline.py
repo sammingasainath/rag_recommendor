@@ -35,7 +35,7 @@ class RAGPipeline:
         
         # Step 1: Get query embedding
         try:
-            query_embedding = gemini_service.get_embedding(request.query)
+            query_embedding = await gemini_service.get_embedding(request.query)
             logger.debug(f"Generated embedding with dimension {len(query_embedding)}")
         except Exception as e:
             logger.error(f"Failed to generate query embedding: {e}")
@@ -69,9 +69,10 @@ class RAGPipeline:
         # Step 3: Retrieve candidates via vector similarity search
         try:
             matches = await supabase_service.match_assessments(
-                query_embedding=query_embedding, 
-                match_threshold=match_threshold,
+                embedding=query_embedding, 
                 match_count=match_count,
+                min_similarity=match_threshold,
+                query=request.query,
                 **filters
             )
             
@@ -91,13 +92,14 @@ class RAGPipeline:
         
         # Step 4: Generate recommendations using LLM
         try:
-            llm_recommendations = gemini_service.generate_recommendations(
+            # This function returns a list of indices corresponding to the matches list
+            recommended_indices = await gemini_service.generate_recommendations(
                 query=request.query,
-                contexts=matches,
+                context_docs=matches,
                 top_k=request.top_k
             )
             
-            logger.debug(f"Generated {len(llm_recommendations)} recommendations")
+            logger.debug(f"Generated {len(recommended_indices)} recommendation indices")
         except Exception as e:
             logger.error(f"Failed to generate recommendations: {e}")
             raise RuntimeError(f"Failed to generate recommendations: {e}")
@@ -105,38 +107,46 @@ class RAGPipeline:
         # Step 5: Convert to AssessmentResponse objects
         recommendations = []
         
-        # Create a dictionary of matches for quick lookup by name
-        matches_by_name = {match["name"]: match for match in matches}
-        
-        for rec in llm_recommendations:
-            name = rec.get("name")
+        # Process each recommended index to get the corresponding match
+        for idx in recommended_indices:
+            # Validate index is within range
+            if not isinstance(idx, int):
+                logger.warning(f"Skipping non-integer index: {idx}")
+                continue
+                
+            if idx < 0 or idx >= len(matches):
+                logger.warning(f"Skipping out-of-range index: {idx} (valid range: 0-{len(matches)-1})")
+                continue
+                
+            # Get the match from the matches list using the index
+            match = matches[idx]
             
-            if name in matches_by_name:
-                match = matches_by_name[name]
-                
-                assessment = AssessmentResponse(
-                    name=name,
-                    url=match.get("url"),
-                    description=match.get("description"),
-                    explanation=rec.get("explanation", ""),
-                    similarity_score=match.get("similarity", 0.0),
-                    relevance_score=rec.get("relevance_score", 0.0) / 10.0,  # Normalize to 0-1 range
-                    remote_testing=match.get("remote_testing", False),
-                    adaptive_irt=match.get("adaptive_irt", False),
-                    test_types=match.get("test_types", []),
-                    job_levels=match.get("job_levels", []),
-                    duration_text=match.get("duration_text", ""),
-                    duration_min_minutes=match.get("duration_min_minutes"),
-                    duration_max_minutes=match.get("duration_max_minutes"),
-                    is_untimed=match.get("is_untimed", False),
-                    is_variable_duration=match.get("is_variable_duration", False),
-                    languages=match.get("languages", []),
-                    key_features=match.get("key_features", [])
-                )
-                
-                recommendations.append(assessment)
-            else:
-                logger.warning(f"Recommendation for '{name}' not found in retrieved matches")
+            # Create explanations based on similarity score
+            explanation = f"This assessment has a semantic relevance of {match.get('similarity', 0.0):.2f} to your query about '{request.query}'"
+            
+            # Create the assessment response object
+            assessment = AssessmentResponse(
+                id=match.get("id"),  # Include the ID field
+                name=match.get("name"),
+                url=match.get("url"),
+                description=match.get("description"),
+                explanation=explanation,  # Use generated explanation
+                similarity_score=match.get("similarity", 0.0),
+                relevance_score=match.get("similarity", 0.0),  # Use similarity as relevance for now
+                remote_testing=match.get("remote_testing", False),
+                adaptive_irt=match.get("adaptive_irt", False),
+                test_types=match.get("test_types", []),
+                job_levels=match.get("job_levels", []),
+                duration_text=match.get("duration_text", ""),
+                duration_min_minutes=match.get("duration_min_minutes"),
+                duration_max_minutes=match.get("duration_max_minutes"),
+                is_untimed=match.get("is_untimed", False),
+                is_variable_duration=match.get("is_variable_duration", False),
+                languages=match.get("languages", []),
+                key_features=match.get("key_features", [])
+            )
+            
+            recommendations.append(assessment)
         
         processing_time = time.time() - start_time
         logger.info(f"Processed query in {processing_time:.2f}s, found {len(recommendations)} recommendations")
@@ -148,6 +158,39 @@ class RAGPipeline:
             processing_time=processing_time,
             total_assessments=len(matches)
         )
+        
+    @staticmethod
+    async def get_recommendations(query: str, top_k: int = 10) -> List[AssessmentResponse]:
+        """Get assessment recommendations for a query.
+        
+        This is a convenience method for the evaluation service to use.
+        
+        Args:
+            query: The natural language query.
+            top_k: The number of recommendations to return.
+            
+        Returns:
+            A list of assessment responses.
+        """
+        try:
+            logger.info(f"Getting recommendations for evaluation: {query}")
+            
+            # Create a recommendation request
+            request = RecommendationRequest(
+                query=query,
+                top_k=top_k
+            )
+            
+            # Process the query
+            response = await RAGPipeline.process_query(request)
+            
+            # Return the recommendations
+            return response.recommendations
+        except Exception as e:
+            logger.error(f"Failed to get recommendations for evaluation: {e}")
+            # Return an empty list rather than raising an exception
+            # This allows the evaluation service to continue with other queries
+            return []
 
 # Create a global instance
 rag_pipeline = RAGPipeline()

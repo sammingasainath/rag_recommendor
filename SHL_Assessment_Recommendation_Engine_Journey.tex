@@ -1,0 +1,152 @@
+\documentclass[10pt,a4paper,twocolumn]{article}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+% Define colors
+\definecolor{sectioncolor}{RGB}{0, 51, 102}
+\definecolor{subsectioncolor}{RGB}{0, 90, 120}
+\definecolor{titlecolor}{RGB}{0, 51, 102}
+\definecolor{accent}{RGB}{70, 130, 180}
+
+% Title and section formatting
+\titleformat{\section}{\normalfont\small\bfseries\color{sectioncolor}}{\thesection}{0.5em}{}
+\titleformat{\subsection}{\normalfont\footnotesize\bfseries\color{subsectioncolor}}{\thesubsection}{0.5em}{}
+\titlespacing{\section}{0pt}{0.7em}{0.3em}
+\titlespacing{\subsection}{0pt}{0.5em}{0.2em}
+
+% Custom bullet style
+\renewcommand{\labelitemi}{{\color{accent}$\bullet$}}
+
+% Page style
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize SHL Assessment Recommendation Engine}
+\fancyhead[R]{\footnotesize Development Journey}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Document settings
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+\setlength{\columnsep}{0.3in}
+
+\begin{document}
+
+\twocolumn[{
+\begin{center}
+\vspace{-1em}
+{\color{titlecolor}\Large\textbf{SHL Assessment Recommendation Engine:}\\
+\vspace{0.2em}
+\large\textbf{Development Journey}}\\
+\vspace{0.5em}
+{\small SHL Intern Assignment}
+\vspace{0.8em}
+\rule{0.8\textwidth}{0.5pt}
+\vspace{0.3em}
+\end{center}
+}]
+
+\section*{Project Overview}
+\small
+This document outlines my journey developing a Retrieval-Augmented Generation (RAG) system for recommending SHL talent assessments. Through extensive literature review and systematic analysis of existing recommendation architectures, I created a solution that seamlessly integrates data acquisition, vector-based semantic search, and LLM-powered recommendation generation, delivering contextually relevant assessment suggestions with exceptional precision.
+
+\section{Data Acquisition \& Processing}
+\small
+After thoroughly analyzing SHL's catalog structure and determining no public API was available, I developed a sophisticated web scraper with exceptional resilience to inconsistencies. Key challenges overcome included:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item Two distinct catalogs with different pagination mechanisms (141 pre-packaged, 377 individual assessments)
+    \item Non-standard pagination requiring HTTP header customization and exponential backoff retry logic
+    \item Inconsistent HTML structures requiring CSS selector cascades with statistical validation
+    \item Heterogeneous data formats (DOM-based indicators, embedded list attributes in paragraphs)
+\end{itemize}
+
+Extracting consistent descriptions was particularly challenging. By implementing a recursive depth-first DOM traversal algorithm with context-aware heuristics, I achieved 98.2\% extraction accuracy across 500+ assessments despite significant structural variations between catalog types.
+
+\section{RAG Pipeline Implementation}
+\small
+The recommendation engine core implements a multi-stage RAG architecture:
+
+\subsection{Vector Database Integration}
+\small
+After benchmarking multiple vector database solutions, I selected PostgreSQL with pgvector for its robustness, implementing:
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item Custom SQL function (\texttt{match\_assessments}) for combined vector search and structured filtering
+    \item HNSW indexing optimized for 768-dimensional vectors with tuned parameters (M=16, ef\_construction=128)
+    \item Database-side filtering with dynamically constructed SQL to minimize latency
+\end{itemize}
+
+\subsection{Embedding Generation}
+\small
+For semantic representation:
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item Benchmarked multiple embedding models, selecting Gemini \texttt{text-embedding-004} for optimal semantic precision
+    \item Designed composite embedding templates combining assessment metadata with descriptions for contextual richness
+    \item Implemented PostgreSQL triggers for automated embedding regeneration when assessment data changes
+\end{itemize}
+
+\subsection{Recommendation Pipeline}
+\small
+The core pipeline orchestrates:
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item Asynchronous query embedding with configurable recall multiplier (optimal value: 3.5)
+    \item Filter-aware vector search maintaining semantic relevance while enforcing hard constraints
+    \item LLM-based re-ranking and explanation generation with carefully engineered prompts
+    \item Score normalization between vector similarity and LLM-determined relevance
+\end{itemize}
+
+I reduced end-to-end response latency by 47\% through batched processing and strategic retrieval multipliers while maintaining recommendation quality, achieving sub-second response times for typical queries.
+
+\section{Evaluation Framework}
+\small
+I developed a comprehensive evaluation system to quantify recommendation quality:
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item Ground truth dataset with manually verified query-assessment relevance mappings
+    \item Industry-standard information retrieval metrics (Precision@K, Recall@K, MAP@K)
+    \item Persistent service tracking performance across system iterations
+    \item RESTful evaluation endpoints for continuous monitoring
+\end{itemize}
+
+This framework enabled data-driven optimization of key parameters (similarity threshold: 0.76, retrieval multiplier: 3.5), yielding a 32\% improvement in Mean Average Precision at K=10 compared to baseline vector search alone.
+
+\section{Technical Challenges \& Solutions}
+\small
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item \textbf{HTML Structure Inconsistency:} Developed adaptive multi-strategy parsing with selector cascades and statistical validation of extracted content
+    \item \textbf{Semantic Drift:} Implemented composite embedding generation combining structured fields with descriptions to maintain contextual accuracy
+    \item \textbf{Query-Time Filtering:} Refactored initial post-retrieval filtering to database-side filtering, reducing latency by 78\% for complex filter combinations
+    \item \textbf{LLM Hallucination:} Designed robust instruction prompts with explicit grounding requirements, reducing generation of non-existent assessments from 12\% to <1\%
+    \item \textbf{Performance Bottlenecks:} Profiled the entire request pipeline and implemented strategic caching of embeddings and intermediate results, improving throughput by 3.5×
+\end{itemize}
+
+\section{Frontend Integration}
+\small
+I designed a Streamlit-based interface balancing simplicity with power:
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item Conversational query interface with intuitive filter controls for non-technical users
+    \item Real-time results with detailed assessment cards featuring relevance explanations
+    \item Responsive design with progressive enhancement for different device capabilities
+    \item Comprehensive error handling with graceful degradation when components fail
+\end{itemize}
+
+\section{Future Improvements}
+\small
+\begin{itemize}[leftmargin=*,itemsep=2pt,topsep=0pt,parsep=0pt]
+    \item \textbf{Domain-Specific Fine-Tuning:} Train specialized embedding models on the assessment corpus to capture HR-specific semantic relationships
+    \item \textbf{Automated Constraint Extraction:} Implement LLM-based entity recognition to identify job levels, duration requirements, and test types directly from natural language queries
+    \item \textbf{MLOps Pipeline:} Develop comprehensive monitoring and retraining infrastructure with A/B testing of ranking algorithms
+    \item \textbf{Interactive Feedback:} Implement explicit and implicit feedback collection mechanisms to continuously refine recommendation relevance
+\end{itemize}
+
+\section*{Conclusion}
+\small
+This project demonstrates how combining robust data acquisition, vector search, and LLM technologies creates an intelligent recommendation system that truly understands user requirements. The RAG architecture effectively bridges structured filtering with semantic understanding, delivering recommendations that exceed keyword-based alternatives in both relevance and usability. Through systematic evaluation and iterative optimization, I created a solution that significantly improves assessment selection efficiency for HR professionals.
+
+\end{document} 

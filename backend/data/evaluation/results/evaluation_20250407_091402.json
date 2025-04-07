@@ -1,0 +1,6 @@
+{
+  "mean_recall_at_k": 0.0,
+  "mean_average_precision": 0.0,
+  "k_value": 4,
+  "total_queries": 10,
+  "timestamp": 

@@ -1,0 +1,109 @@
+{
+  "mean_recall_at_k": 0.0,
+  "mean_average_precision": 0.0,
+  "k_value": 10,
+  "total_queries": 10,
+  "timestamp": "2025-04-07T09:16:55.442257",
+  "evaluation_results": [
+    {
+      "query_id": "query_programming_skills",
+      "query_text": "Find assessments for software developers with programming skills",
+      "recall_at_k": 0.0,
+      "precision_at_k": [],
+      "average_precision": 0.0,
+      "recommended_assessments": [],
+      "relevant_recommended": [],
+      "total_relevant": 10
+    },
+    {
+      "query_id": "query_data_science",
+      "query_text": "Recommend assessments for data science and machine learning positions",
+      "recall_at_k": 0.0,
+      "precision_at_k": [],
+      "average_precision": 0.0,
+      "recommended_assessments": [],
+      "relevant_recommended": [],
+      "total_relevant": 10
+    },
+    {
+      "query_id": "query_leadership",
+      "query_text": "Find assessments for evaluating leadership and management skills",
+      "recall_at_k": 0.0,
+      "precision_at_k": [],
+      "average_precision": 0.0,
+      "recommended_assessments": [],
+      "relevant_recommended": [],
+      "total_relevant": 10
+    },
+    {
+      "query_id": "query_customer_service",
+      "query_text": "Assessments for customer service and call center roles",
+      "recall_at_k": 0.0,
+      "precision_at_k": [],
+      "average_precision": 0.0,
+      "recommended_assessments": [],
+      "relevant_recommended": [],
+      "total_relevant": 10
+    },
+    {
+      "query_id": "query_cloud_computing",
+      "query_text": "Recommend assessments for cloud computing and DevOps engineers",
+      "recall_at_k": 0.0,
+      "precision_at_k": [],
+      "average_precision": 0.0,
+      "recommended_assessments": [],
+      "relevant_recommended": [],
+      "total_relevant": 10
+    },
+    {
+      "query_id": "query_engineering",
+      "query_text": "Assessments for engineering positions in various domains",
+      "recall_at_k": 0.0,
+      "precision_at_k": [],
+      "average_precision": 0.0,
+      "recommended_assessments": [],
+      "relevant_recommended": [],
+      "total_relevant": 10
+    },
+    {
+      "query_id": "query_frontend_development",
+      "query_text": "Find assessments for frontend developers and UI designers",
+      "recall_at_k": 0.0,
+      "precision_at_k": [],
+      "average_precision": 0.0,
+      "recommended_assessments": [],
+      "relevant_recommended": [],
+      "total_relevant": 10
+    },
+    {
+      "query_id": "query_graduate_recruitment",
+      "query_text": "Assessments suitable for graduate recruitment and campus hiring",
+      "recall_at_k": 0.0,
+      "precision_at_k": [],
+      "average_precision": 0.0,
+      "recommended_assessments": [],
+      "relevant_recommended": [],
+      "total_relevant": 10
+    },
+    {
+      "query_id": "query_remote_testing",
+      "query_text": "Find assessments that support remote testing for work-from-home candidates",
+      "recall_at_k": 0.0,
+      "precision_at_k": [],
+      "average_precision": 0.0,
+      "recommended_assessments": [],
+      "relevant_recommended": [],
+      "total_relevant": 10
+    },
+    {
+      "query_id": "query_entry_level",
+      "query_text": "Recommend assessments for entry-level candidates with no experience",
+      "recall_at_k": 0.0,
+      "precision_at_k": [],
+      "average_precision": 0.0,
+      "recommended_assessments": [],
+      "relevant_recommended": [],
+      "total_relevant": 10
+    }
+  ]
+}
