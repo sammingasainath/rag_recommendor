@@ -6,7 +6,7 @@ This is a comprehensive Retrieval-Augmented Generation (RAG) system that helps u
 
 The system uses a vector database for semantic search and a Large Language Model (LLM) for generating recommendations and explanations. It features a modern web interface built with Streamlit and a powerful API backend developed with FastAPI.
 
-Swagger Documentation : https://shl-assessment-backend-aiou.onrender.com/docs
+Swagger(  OpenAPI documentation)  Documentation : https://shl-assessment-backend-aiou.onrender.com/docs
 
 ## Key Features
 
