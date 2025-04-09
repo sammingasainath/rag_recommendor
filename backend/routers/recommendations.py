@@ -44,6 +44,38 @@ async def get_recommendations(
     
     logger.info(f"Processing recommendation request for query: {query}")
     
+    # Extract filters from the natural language query
+    extracted_filters = {}
+    try:
+        extracted_filters = await gemini_service.extract_filters_from_query(query)
+        logger.info(f"Extracted filters from query: {extracted_filters}")
+    except Exception as e:
+        logger.warning(f"Failed to extract filters from query: {e}")
+    
+    # Merge extracted filters with explicitly provided filters
+    merged_filters = {}
+    if request.filters:
+        # Start with explicitly provided filters
+        if request.filters.job_levels:
+            merged_filters["job_levels"] = request.filters.job_levels
+        if request.filters.test_types:
+            merged_filters["test_types"] = request.filters.test_types
+        if request.filters.max_duration_minutes and request.filters.max_duration_minutes > 0:
+            merged_filters["max_duration_minutes"] = request.filters.max_duration_minutes
+        if request.filters.duration_type:
+            merged_filters["duration_type"] = request.filters.duration_type
+        if request.filters.remote_testing is not None:
+            merged_filters["remote_testing"] = request.filters.remote_testing
+        if request.filters.languages:
+            merged_filters["languages"] = request.filters.languages
+        if request.filters.min_similarity:
+            merged_filters["min_similarity"] = request.filters.min_similarity
+    
+    # Merge with extracted filters (only if not already specified)
+    for key, value in extracted_filters.items():
+        if key not in merged_filters:
+            merged_filters[key] = value
+    
     # Generate embedding for the query
     try:
         query_embedding = await gemini_service.get_embedding(query)
@@ -61,7 +93,7 @@ async def get_recommendations(
             matches = await supabase_service.match_assessments(
                 embedding=query_embedding, 
                 match_count=top_k * settings.RETRIEVAL_MULTIPLIER,
-                min_similarity=settings.MIN_SIMILARITY_THRESHOLD,
+                min_similarity=merged_filters.get("min_similarity", settings.MIN_SIMILARITY_THRESHOLD),
                 query=query  # Pass the query directly to match_assessments
             )
         else:
@@ -77,6 +109,34 @@ async def get_recommendations(
                 total_assessments=0,
                 timestamp=time.time()
             )
+            
+        # Apply duration filters if specified (since they're not handled in the DB query)
+        # Get duration filter parameter from merged_filters
+        max_duration = merged_filters.get("max_duration_minutes", 0)
+        
+        # Check if duration filter needs to be applied
+        if max_duration and isinstance(max_duration, int) and max_duration > 0:
+            
+            logger.info(f"Applying duration filter: max={max_duration} minutes")
+            filtered_matches = []
+            
+            for match in matches:
+                # Extract the duration_minutes from the match
+                duration_minutes = match.get("duration_minutes")
+                
+                # Apply max duration filter if specified
+                if duration_minutes is not None and duration_minutes > max_duration:
+                    continue
+                
+                # Include all assessments that pass the filter
+                filtered_matches.append(match)
+            
+            # Use filtered matches
+            if filtered_matches:
+                logger.info(f"Duration filter applied: {len(matches)} → {len(filtered_matches)} assessments")
+                matches = filtered_matches
+            else:
+                logger.warning(f"Duration filter removed all matches, reverting to unfiltered results")
     except Exception as e:
         logger.error(f"Error matching assessments: {e}")
         raise HTTPException(status_code=500, detail=f"Error matching assessments: {str(e)}")
@@ -139,12 +199,31 @@ async def rerank_recommendations(query: str, matches: List[Dict[str, Any]], top_
     # Prepare context for the LLM
     context_docs = []
     for match in matches:
+        # Get duration info
+        duration_text = match.get('duration_text', 'Unknown')
+        
+        # Get specific duration information
+        duration_minutes = match.get('duration_minutes')
+        is_untimed = match.get('is_untimed', False)
+        is_variable = match.get('is_variable_duration', False)
+        
+        # Create a formatted duration string
+        duration_info = duration_text
+        if is_untimed:
+            duration_info = "Untimed assessment"
+        elif is_variable:
+            duration_info = "Variable duration"
+        elif duration_minutes is not None:
+            duration_info = f"Duration: {duration_minutes} minutes"
+            
         # Create a text representation of the assessment
         doc = f"""Assessment: {match.get('name', 'Unknown')}
 Description: {match.get('description', 'No description available')}
 Test Types: {', '.join(match.get('test_types', []))}
 Job Levels: {', '.join(match.get('job_levels', []))}
-Duration: {match.get('duration_text', 'Unknown')}
+Duration: {duration_info}
+Remote Testing: {"Yes" if match.get('remote_testing', False) else "No"}
+Languages: {', '.join(match.get('languages', []))}
 Features: {', '.join(match.get('key_features', []))}
 Vector Similarity Score: {match.get('similarity', 0.0)}
 """

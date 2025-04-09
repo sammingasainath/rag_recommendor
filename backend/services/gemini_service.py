@@ -3,7 +3,8 @@ import os
 import time
 import random
 import json
-from typing import List, Dict, Any, Optional
+import re
+from typing import List, Dict, Any, Optional, Tuple
 import tenacity
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 
@@ -305,6 +306,254 @@ YOUR RESPONSE (just a JSON array of indices):
             logger.error(f"Failed to generate recommendations: {e}")
             raise RuntimeError(f"Failed to generate recommendations: {e}")
 
+    async def extract_filters_from_query(self, query: str) -> Dict[str, Any]:
+        """
+        Extract structured filters from a natural language query.
+        
+        Args:
+            query: Natural language query to extract filters from
+            
+        Returns:
+            Dictionary of extracted filters
+        """
+        # Default empty filters
+        default_filters = {
+            "job_levels": [],
+            "test_types": [],
+            "languages": [],
+            "max_duration_minutes": None,
+            "remote_testing": None,
+            "min_similarity": None
+        }
+        
+        # Always use mock filters if mock mode is enabled
+        if self.use_mock:
+            logger.info(f"Mock mode: Using simulated filters for query: {query[:50]}...")
+            return self._get_mock_filters(query)
+        
+        if not self.initialized or not self.client:
+            logger.warning("Using mock filters as Gemini API is not initialized")
+            return self._get_mock_filters(query)
+        
+        try:
+            # Define the filter schema
+            schema = {
+                "type": "object",
+                "properties": {
+                    "job_levels": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Job levels mentioned in the query (Entry-Level, Graduate, Mid-Professional, Professional Individual Contributor, Front Line Manager, Supervisor, Manager, Director, Executive, General Population)"
+                    },
+                    "test_types": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Types of tests mentioned in the query (Knowledge & Skills, Simulations, Personality & Behavior, Competencies, Assessment Exercises, Biodata & Situational Judgement, Development & 360, Ability & Aptitude)"
+                    },
+                    "languages": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Languages mentioned in the query (English (USA), English International, Spanish, French, etc.)"
+                    },
+                    "max_duration_minutes": {
+                        "type": ["integer", "null"],
+                        "description": "Maximum duration in minutes"
+                    },
+                    "remote_testing": {
+                        "type": ["boolean", "null"],
+                        "description": "Whether remote testing is required"
+                    },
+                    "min_similarity": {
+                        "type": ["number", "null"],
+                        "description": "Minimum similarity threshold (0.0 to 1.0)"
+                    }
+                },
+                "required": []
+            }
+            
+            # Prepare the prompt
+            prompt = """
+            I need to extract structured filters from the following job requirement or assessment query:
+            
+            "{0}"
+            
+            Extract only filters that are EXPLICITLY mentioned and return them as a valid JSON object. Only include non-empty values. If a filter is not mentioned, leave it out of the JSON or set it to null.
+            
+            These are the available filters:
+            - job_levels: array of strings (Entry-Level, Graduate, Mid-Professional, Professional Individual Contributor, Front Line Manager, Supervisor, Manager, Director, Executive, General Population)
+            - test_types: array of strings (Knowledge & Skills, Simulations, Personality & Behavior, Competencies, Assessment Exercises, Biodata & Situational Judgement, Development & 360, Ability & Aptitude)
+            - languages: array of strings (English (USA), English International, Spanish, French, etc.)
+            - max_duration_minutes: integer representing maximum duration in minutes
+            - remote_testing: boolean (true if remote testing is mentioned, false if in-person is required)
+            
+            Examples of extracting duration information:
+            - "within 30 minutes" → {{"max_duration_minutes": 30}}
+            - "less than 1 hour" → {{"max_duration_minutes": 60}}
+            
+            Return ONLY a valid JSON object with no additional text or explanation. For example:
+            
+            {{
+              "job_levels": ["Entry-Level", "Graduate"],
+              "test_types": ["Knowledge & Skills"],
+              "max_duration_minutes": 30
+            }}
+            
+            Ensure your response can be parsed by JSON.parse() without any modifications.
+            """.format(query)
+            
+            # Get the Gemini model
+            model = self.client.GenerativeModel(self.generation_model)
+            
+            # Run with structured output mode
+            generation_config = {
+                "temperature": 0.0,
+                "max_output_tokens": 2048,
+                "top_p": 0.95,
+            }
+            
+            safety_settings = [{
+                "category": "HARM_CATEGORY_HARASSMENT",
+                "threshold": "BLOCK_NONE"
+            }, {
+                "category": "HARM_CATEGORY_HATE_SPEECH",
+                "threshold": "BLOCK_NONE"
+            }, {
+                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                "threshold": "BLOCK_NONE"
+            }, {
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "threshold": "BLOCK_NONE"
+            }]
+            
+            response = model.generate_content(
+                prompt,
+                generation_config=generation_config,
+                safety_settings=safety_settings
+            )
+            
+            if not response or not response.text:
+                logger.warning("Empty response from Gemini for filter extraction")
+                return default_filters
+            
+            # Log the actual response for debugging
+            logger.debug(f"Raw Gemini response: {response.text}")
+            
+            # Parse the response as JSON
+            try:
+                response_text = response.text.strip()
+                
+                # First try to parse the entire response as JSON
+                try:
+                    filters = json.loads(response_text)
+                except json.JSONDecodeError:
+                    # Check for markdown code blocks or backticks
+                    code_block_pattern = r'```(?:json)?\s*([\s\S]*?)\s*```'
+                    backticks_pattern = r'`([\s\S]*?)`'
+                    json_pattern = r'(\{[\s\S]*\})'
+                    
+                    # Try to extract from markdown code block
+                    code_match = re.search(code_block_pattern, response_text)
+                    if code_match:
+                        logger.debug("Found JSON in code block")
+                        filters = json.loads(code_match.group(1).strip())
+                    else:
+                        # Try to extract from backticks
+                        backtick_match = re.search(backticks_pattern, response_text)
+                        if backtick_match:
+                            logger.debug("Found JSON in backticks")
+                            filters = json.loads(backtick_match.group(1).strip())
+                        else:
+                            # Try to extract any JSON-like structure
+                            json_match = re.search(json_pattern, response_text)
+                            if json_match:
+                                logger.debug("Found JSON-like structure")
+                                filters = json.loads(json_match.group(1).strip())
+                            else:
+                                raise json.JSONDecodeError("Could not find valid JSON in response", response_text, 0)
+                
+                logger.info(f"Extracted filters from query: {filters}")
+                
+                # Clean up filters (remove empty arrays and null values)
+                for key in list(filters.keys()):
+                    if filters[key] is None or (isinstance(filters[key], list) and len(filters[key]) == 0):
+                        filters.pop(key)
+                        
+                # Merge default filters with extracted filters
+                merged_filters = {**default_filters, **filters}
+                
+                return merged_filters
+                
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse Gemini's response as JSON: {e}, response: '{response.text}'")
+                return default_filters
+            except Exception as e:
+                logger.error(f"Error processing filter extraction response: {e}")
+                return default_filters
+                
+        except Exception as e:
+            logger.error(f"Error extracting filters from query: {e}")
+            return default_filters
+
+    def _get_mock_filters(self, query: str) -> Dict[str, Any]:
+        """Generate mock filters based on query content for testing or fallback."""
+        filters = {
+            "job_levels": [],
+            "test_types": [],
+            "languages": [],
+            "max_duration_minutes": None,
+            "remote_testing": None,
+            "min_similarity": None
+        }
+        
+        # Simple keyword based extraction for testing
+        query = query.lower()
+        
+        # Try to extract job levels
+        job_level_keywords = {
+            "entry": "Entry-Level",
+            "graduate": "Graduate",
+            "mid": "Mid-Professional",
+            "senior": "Professional Individual Contributor",
+            "manager": "Manager",
+            "executive": "Executive",
+            "director": "Director",
+            "supervisor": "Supervisor"
+        }
+        
+        for keyword, level in job_level_keywords.items():
+            if keyword in query:
+                filters["job_levels"].append(level)
+        
+        # Try to extract test types
+        if "knowledge" in query or "skill" in query:
+            filters["test_types"].append("Knowledge & Skills")
+        if "personality" in query:
+            filters["test_types"].append("Personality & Behavior")
+        if "cognitive" in query or "ability" in query or "aptitude" in query:
+            filters["test_types"].append("Ability & Aptitude")
+        if "simulation" in query:
+            filters["test_types"].append("Simulations")
+        if "situational" in query:
+            filters["test_types"].append("Biodata & Situational Judgement")
+        
+        # Try to extract duration
+        duration_pattern = r'(\d+)\s*(?:min|minute|minutes|hour|hours)'
+        duration_match = re.search(duration_pattern, query)
+        if duration_match:
+            duration = int(duration_match.group(1))
+            # Convert hours to minutes if needed
+            if "hour" in duration_match.group(0):
+                duration *= 60
+            filters["max_duration_minutes"] = duration
+        
+        # Check for remote testing preference
+        if "remote" in query or "online" in query:
+            filters["remote_testing"] = True
+        if "in-person" in query or "in person" in query or "on-site" in query:
+            filters["remote_testing"] = False
+        
+        logger.info(f"Generated mock filters for query: {filters}")
+        return filters
 
 # Create a global instance
 gemini_service = GeminiService() 

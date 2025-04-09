@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from typing import List, Dict
 import os
 from dotenv import load_dotenv
+import re
 
 # Load environment variables
 load_dotenv()
@@ -88,7 +89,7 @@ if "filters" not in st.session_state:
     st.session_state.filters = {
         "job_levels": [],
         "test_types": [],
-        "max_duration": 0,  # 0 means no limit
+        "max_duration_minutes": 0,  # 0 means no maximum
         "remote_testing": None,  # None means not filtering by remote
         "languages": []
     }
@@ -105,9 +106,11 @@ def parse_duration(row):
     if row.get('is_variable_duration', False):
         return None
     
-    # Use max_duration if available, otherwise min_duration
-    if row.get('duration_max_minutes') is not None:
-        return row['duration_max_minutes']
+    # Use duration_minutes if available
+    if row.get('duration_minutes') is not None:
+        return row['duration_minutes']
+    
+    # Fallback to duration_min_minutes
     if row.get('duration_min_minutes') is not None:
         return row['duration_min_minutes']
     
@@ -120,12 +123,39 @@ def apply_filters(df):
         
     filtered_df = df.copy()
     
-    # Create numeric duration column for filtering
-    try:
-        filtered_df['duration_minutes'] = filtered_df.apply(parse_duration, axis=1)
-    except Exception as e:
-        st.warning(f"Error processing duration: {str(e)}. Duration filtering will be skipped.")
-        filtered_df['duration_minutes'] = None
+    # Remove specified columns
+    columns_to_remove = [
+        'updated_at', 'created_at', 'explanation', 'Relevance', 'similarity_score',
+        'is_variable_duration', 'is_untimed', 'duration_max_minutes', 'duration_min_minutes'
+        # Remove detailed duration fields that should not be displayed
+    ]
+    filtered_df = filtered_df.drop(columns=[col for col in columns_to_remove if col in filtered_df.columns])
+    
+    # Convert duration values to numeric for filtering
+    # First check for and standardize duration column
+    if 'Duration' in filtered_df.columns:
+        # Convert all duration values to numeric, replacing 'None', 'Variable', etc. with 0
+        filtered_df['Duration_numeric'] = filtered_df['Duration'].apply(
+            lambda x: 0 if pd.isna(x) or str(x).lower() in ['none', 'variable', 'n/a', '-', 'tbc'] else 
+            int(str(x).split()[0]) if isinstance(x, str) and any(c.isdigit() for c in str(x)) else 
+            int(x) if pd.notna(x) and isinstance(x, (int, float)) else 0
+        )
+    elif 'duration_minutes' in filtered_df.columns:
+        # If duration_minutes exists, use it directly
+        filtered_df['Duration_numeric'] = filtered_df['duration_minutes'].fillna(0).astype(int)
+    elif 'duration_min_minutes' in filtered_df.columns:
+        # If duration_min_minutes exists, use it 
+        filtered_df['Duration_numeric'] = filtered_df['duration_min_minutes'].fillna(0).astype(int)
+    elif 'duration_text' in filtered_df.columns:
+        # Try to extract numeric values from duration_text
+        filtered_df['Duration_numeric'] = filtered_df['duration_text'].apply(
+            lambda x: 0 if pd.isna(x) or str(x).lower() in ['none', 'variable', 'n/a', '-', 'tbc', 'untimed'] else
+            int(re.search(r'\d+', str(x)).group()) if re.search(r'\d+', str(x)) else 0
+        )
+    else:
+        # If no duration column exists, create a default one with 0
+        filtered_df['Duration_numeric'] = 0
+        st.info("No duration information found in the data")
     
     # Apply job level filter only if values are selected (empty means all allowed)
     if st.session_state.filters["job_levels"] and len(st.session_state.filters["job_levels"]) > 0:
@@ -145,19 +175,16 @@ def apply_filters(df):
         except Exception as e:
             st.info("Could not apply test type filter.")
     
-    # Apply duration filter only if set to non-zero (0 means no duration limit)
-    if st.session_state.filters["max_duration"] > 0:
+    # Apply maximum duration filter if specified
+    if st.session_state.filters["max_duration_minutes"] > 0:
         try:
-            # Create a mask for valid durations
-            valid_duration_mask = (
-                (filtered_df['duration_minutes'].notna()) & 
-                (filtered_df['duration_minutes'] <= st.session_state.filters["max_duration"])
-            )
-            
-            # Apply the duration filter
-            filtered_df = filtered_df[valid_duration_mask]
+            # Use our normalized Duration_numeric field
+            filtered_df = filtered_df[
+                (filtered_df['Duration_numeric'] <= st.session_state.filters["max_duration_minutes"]) | 
+                (filtered_df['Duration_numeric'] == 0)  # Keep items with 0 duration (None/Variable)
+            ]
         except Exception as e:
-            st.info("Could not apply duration filter.")
+            st.info(f"Could not apply maximum duration filter: {e}")
     
     # Apply remote testing filter only if explicitly set (None means both allowed)
     if st.session_state.filters["remote_testing"] is not None:
@@ -176,36 +203,12 @@ def apply_filters(df):
             )]
         except Exception as e:
             st.info("Could not apply language filter.")
-    
-    # Do not limit to TOP_K here, as we want to return all filtered results
-    # Format for display
-    display_df = filtered_df.copy()
-    
-    # Add https://shl.com prefix to URLs
-    if 'url' in display_df.columns:
-        display_df['url'] = display_df['url'].apply(lambda x: f"https://shl.com{x}" if x and not x.startswith('http') else x)
-    
-    # Convert list columns to strings for better display
-    if 'job_levels' in display_df.columns:
-        display_df['job_levels'] = display_df['job_levels'].apply(lambda x: ', '.join(x) if isinstance(x, list) else str(x))
-    if 'test_types' in display_df.columns:
-        display_df['test_types'] = display_df['test_types'].apply(lambda x: ', '.join(x) if isinstance(x, list) else str(x))
-    if 'languages' in display_df.columns:
-        display_df['languages'] = display_df['languages'].apply(lambda x: ', '.join(x) if isinstance(x, list) else str(x))
-    
-    # Sort by relevance_score in descending order
-    if 'relevance_score' in display_df.columns:
-        display_df = display_df.sort_values(by='relevance_score', ascending=False)
-    elif 'similarity_score' in display_df.columns:
-        display_df = display_df.sort_values(by='similarity_score', ascending=False)
-    
-    # Reset index to show correct ranking
-    display_df = display_df.reset_index(drop=True)
-    
-    # Add rank column
-    display_df.insert(0, 'rank', range(1, len(display_df) + 1))
-    
-    return display_df
+            
+    # Remove the temporary Duration_numeric column before returning
+    if 'Duration_numeric' in filtered_df.columns:
+        filtered_df = filtered_df.drop(columns=['Duration_numeric'])
+        
+    return filtered_df
 
 # Function to prepare DataFrame for display
 def prepare_display_df(df):
@@ -213,6 +216,34 @@ def prepare_display_df(df):
         return None
     
     display_df = df.copy()
+    
+    # Remove specified columns
+    columns_to_remove = [
+        'updated_at', 'created_at', 'explanation', 'Relevance', 'similarity_score',
+        'is_variable_duration', 'is_untimed', 'duration_max_minutes', 'duration_min_minutes'
+        # Remove detailed duration fields that should not be displayed
+    ]
+    display_df = display_df.drop(columns=[col for col in columns_to_remove if col in display_df.columns])
+    
+    # Calculate a duration_minutes field if it doesn't exist
+    if 'duration_minutes' not in display_df.columns and 'duration_min_minutes' in display_df.columns:
+        display_df['duration_minutes'] = display_df['duration_min_minutes']
+    
+    # Standardize the Duration display
+    if 'Duration' not in display_df.columns:
+        # Create Duration column from various sources if it doesn't exist
+        if 'duration_text' in display_df.columns:
+            display_df['Duration'] = display_df['duration_text']
+        elif 'duration_minutes' in display_df.columns:
+            display_df['Duration'] = display_df['duration_minutes'].apply(
+                lambda x: f"{x} minutes" if pd.notna(x) and x > 0 else "None"
+            )
+    
+    # Clean up the Duration field for display
+    if 'Duration' in display_df.columns:
+        display_df['Duration'] = display_df['Duration'].apply(
+            lambda x: "None" if pd.isna(x) or str(x).lower() in ['none', 'n/a', '-', '0', '0.0'] else str(x)
+        )
     
     # Add https://shl.com prefix to URLs
     if 'url' in display_df.columns:
@@ -282,12 +313,12 @@ with st.sidebar:
             default=st.session_state.filters["test_types"],
             help="Leave empty to include all test types"
         ),
-        "max_duration": st.number_input(
+        "max_duration_minutes": st.number_input(
             "Maximum Duration (minutes)",
-            help="Set to 0 for no duration limit",
+            help="Set to 0 for no maximum duration",
             min_value=0,
             max_value=120,
-            value=st.session_state.filters["max_duration"],
+            value=st.session_state.filters["max_duration_minutes"],
             step=5
         ),
         # Use a selectbox for remote testing to allow None option
@@ -356,7 +387,7 @@ with st.sidebar:
         st.session_state.filters = {
             "job_levels": [],
             "test_types": [],
-            "max_duration": 0,  # 0 means no limit
+            "max_duration_minutes": 0,  # 0 means no maximum
             "remote_testing": None,  # None means not filtering by remote
             "languages": []
         }
@@ -391,9 +422,10 @@ if prompt := st.chat_input("Describe the role and assessment requirements..."):
                         
                     if st.session_state.filters["test_types"] and len(st.session_state.filters["test_types"]) > 0:
                         api_filters["test_types"] = st.session_state.filters["test_types"]
-                        
-                    if st.session_state.filters["max_duration"] > 0:
-                        api_filters["max_duration_minutes"] = st.session_state.filters["max_duration"]
+                    
+                    # Add duration filters    
+                    if st.session_state.filters["max_duration_minutes"] > 0:
+                        api_filters["max_duration_minutes"] = st.session_state.filters["max_duration_minutes"]
                         
                     if st.session_state.filters["remote_testing"] is not None:
                         api_filters["remote_testing"] = st.session_state.filters["remote_testing"]
@@ -517,7 +549,7 @@ with st.expander("How to use this tool"):
     2. **Advanced Filters** (Optional):
         - Use the sidebar to refine your search
         - Filter by specific job levels or test types
-        - Set maximum assessment duration
+        - Set maximum duration
         - Choose language preferences
         - Specify remote testing requirements
         - Filters are applied in real-time to your current results

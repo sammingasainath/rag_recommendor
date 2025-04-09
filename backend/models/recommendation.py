@@ -19,6 +19,7 @@ class RecommendationFilter(BaseModel):
     test_types: Optional[List[str]] = Field(default=None, description="Filter by test types (A, B, C, D, etc.)")
     languages: Optional[List[str]] = Field(default=None, description="Filter by available languages")
     max_duration_minutes: Optional[int] = Field(default=None, description="Maximum duration in minutes")
+    duration_type: Optional[str] = Field(default=None, description="Filter by duration type (Fixed, Variable, Untimed)")
     min_similarity: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Minimum similarity threshold (0.0 to 1.0)")
     remote_testing: Optional[bool] = Field(default=None, description="Filter for remote testing availability")
 
