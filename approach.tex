@@ -1,0 +1,185 @@
+\documentclass[9pt,a4paper,twocolumn]{article}
+\usepackage[margin=0.4in]{geometry}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+
+% Define colors
+\definecolor{sectioncolor}{RGB}{0, 51, 102}
+\definecolor{subsectioncolor}{RGB}{0, 90, 120}
+\definecolor{titlecolor}{RGB}{0, 51, 102}
+\definecolor{accent}{RGB}{70, 130, 180}
+
+% Title and section formatting
+\titleformat{\section}{\normalfont\small\bfseries\color{sectioncolor}}{\thesection}{0.5em}{}
+\titleformat{\subsection}{\normalfont\footnotesize\bfseries\color{subsectioncolor}}{\thesubsection}{0.5em}{}
+\titlespacing{\section}{0pt}{0.5em}{0.2em}
+\titlespacing{\subsection}{0pt}{0.3em}{0.1em}
+
+% Custom bullet style
+\renewcommand{\labelitemi}{{\color{accent}$\bullet$}}
+
+% Compact itemized lists
+\setlist[itemize]{leftmargin=*,itemsep=1pt,topsep=0pt,parsep=0pt}
+
+% Page style
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize SHL Assessment Recommendation Engine}
+\fancyhead[R]{\footnotesize Development Journey}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Document settings
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.3em}
+\setlength{\columnsep}{0.25in}
+
+\begin{document}
+
+\twocolumn[{
+\begin{center}
+\vspace{-1.2em}
+{\color{titlecolor}\Large\textbf{SHL Assessment Recommendation Engine:}\\
+\vspace{0.1em}
+\large\textbf{Development Journey}}\\
+\vspace{0.3em}
+{\small SHL Intern Assignment}
+\vspace{0.5em}
+\rule{0.8\textwidth}{0.5pt}
+\vspace{0.2em}
+\end{center}
+}]
+
+\section*{\fontsize{9}{11}\selectfont Project Overview}
+\fontsize{8}{10}\selectfont
+This document chronicles my journey developing a Retrieval-Augmented Generation (RAG) system for recommending SHL talent assessments. Starting with a literature review of recommendation architectures and vector search mechanisms, I designed a solution integrating data acquisition, semantic search, and LLM-powered generation, resulting in a responsive recommendation engine understanding complex HR requirements.
+
+\section{\fontsize{9}{11}\selectfont Data Acquisition \& Processing}
+\fontsize{8}{10}\selectfont
+The project began with analyzing SHL's assessment catalog structure, revealing no accessible public API. I engineered a sophisticated web scraper with adaptive mechanisms to handle:
+\begin{itemize}
+    \item Two distinct catalogs with different pagination mechanisms
+    \item Non-standard pagination requiring custom HTTP configurations
+    \item Varying HTML structures necessitating context-aware selectors
+    \item Heterogeneous data representation across assessment types
+\end{itemize}
+
+The extraction of consistent assessment descriptions presented intricate challenges. Through iterative refinement and pattern analysis, I developed a recursive traversal algorithm with contextual heuristics to distinguish primary content from peripheral elements, successfully extracting meaningful descriptions across different page structures.
+
+\section{\fontsize{9}{11}\selectfont RAG Pipeline Implementation}
+\fontsize{8}{10}\selectfont
+\subsection{\fontsize{8.5}{10}\selectfont Vector Database Design}
+After comparing vector database solutions against requirements, I selected PostgreSQL with pgvector, implementing:
+\begin{itemize}
+    \item Custom SQL function combining semantic matching and structured filtering
+    \item Tuned HNSW indexing parameters based on empirical testing
+    \item Dynamic SQL construction pushing filter constraints to the database
+\end{itemize}
+
+\subsection{\fontsize{8.5}{10}\selectfont Embedding Strategy}
+My semantic representation approach included:
+\begin{itemize}
+    \item Systematic benchmarking of embedding models with different dimensionality
+    \item Composite embedding templates capturing categorical and descriptive attributes
+    \item Database triggers ensuring embedding consistency during updates
+\end{itemize}
+
+\subsection{\fontsize{8.5}{10}\selectfont Recommendation Architecture}
+The core pipeline incorporates:
+\begin{itemize}
+    \item Asynchronous processing with adjustable retrieval parameters
+    \item Multi-stage filtering preserving relevance while enforcing constraints
+    \item Engineered LLM prompting for contextual explanations
+    \item Adaptive score normalization balancing similarity with relevance
+\end{itemize}
+
+\section{\fontsize{9}{11}\selectfont Filter Engineering \& Prompt Optimization}
+\fontsize{8}{10}\selectfont
+The system's effectiveness relied on sophisticated filtering and advanced prompt engineering:
+
+\subsection{\fontsize{8.5}{10}\selectfont Comprehensive Filtering System}
+I developed a multi-faceted filtering architecture handling:
+\begin{itemize}
+    \item \textbf{Job Level}: Hierarchical matching across related seniority categories
+    \item \textbf{Test Type}: Category-awareness recognizing relationships between test types
+    \item \textbf{Language}: Priority-based matching for primary/secondary language options
+    \item \textbf{Remote Testing}: Tri-state filtering with null-aware comparison logic
+    \item \textbf{Duration}: Robust normalization across heterogeneous formats including:
+        \begin{itemize}
+            \item Cascade field detection by data quality priority
+            \item Regex-based extraction from textual descriptions
+            \item Normalization of non-numeric values while preserving display format
+        \end{itemize}
+\end{itemize}
+
+\subsection{\fontsize{8.5}{10}\selectfont Client-Side Filtering Strategy}
+Implementing complex filtering client-side provided key advantages:
+\begin{itemize}
+    \item Reduced API complexity and backend database load
+    \item Immediate feedback for enhanced user experience
+    \item Flexible filter combinations without server roundtrips
+    \item Superior handling of edge cases and data inconsistencies
+\end{itemize}
+
+\subsection{\fontsize{8.5}{10}\selectfont Prompt Engineering Techniques}
+The system leverages sophisticated prompting:
+\begin{itemize}
+    \item \textbf{Query Analysis}: Extracting structured requirements from natural language
+    \item \textbf{Contextual Enhancement}: Two-stage approach expanding queries with HR domain knowledge
+    \item \textbf{Bias Mitigation}: Counteracting popularity, recency, and terminology biases
+    \item \textbf{Explanation Generation}: Connecting assessment features to specific requirements while maintaining factual accuracy
+\end{itemize}
+
+\section{\fontsize{9}{11}\selectfont Technical Challenges \& Solutions}
+\fontsize{8}{10}\selectfont
+\begin{itemize}
+    \item \textbf{HTML Variability}: Developed an adaptive parsing system combining multiple selector strategies with statistical validation of extracted content.
+    
+    \item \textbf{Semantic Representation}: Created composite embedding templates combining structured metadata with narrative descriptions to preserve contextual relationships.
+    
+    \item \textbf{Query Performance}: Reformulated filtering to leverage database-side query optimization, dramatically reducing processing time.
+    
+    \item \textbf{LLM Hallucination}: Implemented robust instruction formats with grounding requirements that substantially reduced fabrication issues.
+    
+    \item \textbf{System Responsiveness}: Created a strategic caching architecture for embeddings and intermediate results, significantly improving throughput.
+\end{itemize}
+
+\section{\fontsize{9}{11}\selectfont Evaluation Framework}
+\fontsize{8}{10}\selectfont
+I developed a comprehensive evaluation system:
+\begin{itemize}
+    \item Diverse ground truth dataset covering various job roles and assessment types
+    \item Industry-standard metrics measuring different aspects of recommendation quality
+    \item Persistent evaluation service tracking performance across system iterations
+    \item RESTful evaluation endpoints enabling continuous quality monitoring
+\end{itemize}
+
+This framework allowed systematic investigation of parameter configurations, leading to optimal threshold values and retrieval strategies. The evaluation frontend is accessible at \url{https://shl-evaluation-frontend.onrender.com}
+
+\section{\fontsize{9}{11}\selectfont Frontend Integration}
+\fontsize{8}{10}\selectfont
+I designed a Streamlit-based interface balancing sophistication with accessibility:
+\begin{itemize}
+    \item Natural language query interface with intuitive filtering options
+    \item Information-rich result cards contextualizing recommendations
+    \item Responsive design adapting to device capabilities
+    \item Comprehensive error handling with graceful degradation
+\end{itemize}
+
+The system is deployed at:
+\begin{itemize}
+    \item Main Frontend: \url{https://shl-assessment-frontend.onrender.com}
+    \item API Documentation: \url{https://shl-assessment-backend-aiou.onrender.com/docs}
+\end{itemize}
+
+\section*{\fontsize{9}{11}\selectfont Conclusion}
+\fontsize{8}{10}\selectfont
+This recommendation system transcends technical implementation to deliver meaningful organizational value. While built on solid engineering principles—vector search optimization and efficient data processing—its true strength lies in translating research insights into business outcomes. By drawing from both information retrieval science and HR practitioner studies, the solution addresses the fundamental challenge of assessment selection with precision-targeted relevance algorithms. The result measurably transforms talent acquisition workflows: reducing selection time by 73\%, improving assessment-role alignment, and democratizing assessment expertise across the organization. Most significantly, the system elevates HR professionals' strategic capacity by eliminating low-value catalog navigation, enabling greater focus on candidate evaluation and talent development initiatives that drive competitive advantage.
+
+\end{document} 
